@@ -32,11 +32,15 @@ Each report becomes a **forum post** (or a message, in a normal text channel) co
 
 ### 2. Unity
 
-1. Add the package: **Window → Package Manager → + → Add package from disk…** and pick `package.json` in this folder.
+1. Add the package: **Window → Package Manager → + → Add package from git URL…** and enter:
+   ```
+   https://github.com/qhenshaw/PlaytestFeedback.git
+   ```
    Or add it to `Packages/manifest.json`:
    ```json
-   "com.qhenshaw.playtestfeedback": "file:E:/VFS/Packages/PlaytestFeedback"
+   "com.qhenshaw.playtestfeedback": "https://github.com/qhenshaw/PlaytestFeedback.git"
    ```
+   To pin a version, append a tag or commit, e.g. `...PlaytestFeedback.git#v0.1.0`.
 2. **Tools → Playtest Feedback → Create or Select Settings**. This creates `Assets/Resources/PlaytestFeedbackSettings.asset`.
 3. Paste the webhook URL and click **Send Test Message**.
 4. Enter Play mode and press **F8**.
