@@ -1,0 +1,32 @@
+{
+  "displayName": "Playtest Feedback",
+  "author": "Quin Henshaw",
+  "version": "0.1.0",
+  "name": "com.qhenshaw.playtestfeedback",
+  "documentationUrl": "https://github.com/qhenshaw/playtestfeedback",
+  "changelogUrl": "https://github.com/qhenshaw/playtestfeedback/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/qhenshaw/playtestfeedback/blob/main/LICENSE.md",
+  "description": "In-game playtest feedback tool. Players press F8 to pause the game, write feedback, pick a category, snip and draw on a screenshot, and send it with game version, system info, logs and custom game state to a Discord channel through a webhook.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.inputsystem": "1.8.2",
+    "com.unity.modules.uielements": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.screencapture": "1.0.0",
+    "com.unity.modules.audio": "1.0.0"
+  },
+  "keywords": [
+    "feedback",
+    "playtest",
+    "discord",
+    "bug report"
+  ],
+  "samples": [
+    {
+      "displayName": "Game Context Example",
+      "description": "Shows how to attach game-specific state (player position, checkpoint, inventory...) to every feedback report.",
+      "path": "Samples~/GameContextExample"
+    }
+  ]
+}
