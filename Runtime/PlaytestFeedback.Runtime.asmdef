@@ -2,7 +2,8 @@
     "name": "PlaytestFeedback.Runtime",
     "rootNamespace": "PlaytestFeedback",
     "references": [
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

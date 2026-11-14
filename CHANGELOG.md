@@ -1,5 +1,13 @@
 # Changelog
 
+[0.1.1] - 2026-11-14
+- Fixed: UI input (submit, navigate, clicks) reached the game's menus and UI action listeners behind the feedback panel.
+  The game's UI action map is no longer kept enabled; instead the game's EventSystems are disabled while the panel is
+  open and the panel uses a private EventSystem with its own UI actions. Previous selection is restored on close.
+- New settings: *Isolate UI Input* (on by default) and *Action Maps To Keep Enabled* (empty by default, replaces
+  *Input Maps To Keep Enabled*, which defaulted to `UI`).
+- Added dependency on `com.unity.ugui`.
+
 [0.1.0] - 2026-11-14
 - First release of Playtest Feedback.
 - F8 / gamepad hotkey opens a UI Toolkit side panel and pauses the game (time, audio, cursor, Input System actions).

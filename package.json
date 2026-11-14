@@ -1,7 +1,7 @@
 {
   "displayName": "Playtest Feedback",
   "author": "Quin Henshaw",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": "com.qhenshaw.playtestfeedback",
   "documentationUrl": "https://github.com/qhenshaw/playtestfeedback",
   "changelogUrl": "https://github.com/qhenshaw/playtestfeedback/blob/main/CHANGELOG.md",
@@ -10,6 +10,7 @@
   "unity": "6000.0",
   "dependencies": {
     "com.unity.inputsystem": "1.8.2",
+    "com.unity.ugui": "2.0.0",
     "com.unity.modules.uielements": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
     "com.unity.modules.imageconversion": "1.0.0",

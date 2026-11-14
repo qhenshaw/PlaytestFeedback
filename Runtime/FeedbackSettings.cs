@@ -78,11 +78,14 @@ namespace PlaytestFeedback
         [Tooltip("Pause all audio (AudioListener.pause) while the panel is open.")]
         public bool pauseAudio = true;
 
-        [Tooltip("Disable every enabled Input System action while the panel is open so typing doesn't move the player. Re-enabled on close.")]
+        [Tooltip("Disable every enabled Input System action while the panel is open (gameplay and UI maps), so nothing in the game reacts to typing, clicks or gamepad input. Re-enabled on close.")]
         public bool disableGameInput = true;
 
-        [Tooltip("Action maps that stay enabled when game input is disabled (the UI map is needed by an InputSystemUIInputModule).")]
-        public string[] inputMapsToKeepEnabled = { "UI" };
+        [Tooltip("While the panel is open, disable the game's EventSystems and drive the panel with a private EventSystem and its own copy of the UI actions. This stops uGUI and UI Toolkit menus behind the panel from receiving clicks, navigation and submit.")]
+        public bool isolateUiInput = true;
+
+        [Tooltip("Action maps to leave enabled while the panel is open (for example a push-to-talk map). Empty by default: leaving a map enabled lets the game react to it behind the panel.")]
+        public string[] actionMapsToKeepEnabled = Array.Empty<string>();
 
         [Header("Form")]
         [Tooltip("Show a 'Your name' field. The name is remembered between sessions.")]

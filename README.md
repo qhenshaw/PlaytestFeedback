@@ -114,7 +114,9 @@ Each of these can be turned off in the settings:
 
 - `Time.timeScale` is set to 0 and audio is paused (`AudioListener.pause`). Both are restored on close.
 - The cursor is unlocked and shown, then restored.
-- **Every enabled Input System action is disabled**, except action maps listed in *Input Maps To Keep Enabled* (`UI` by default, for `InputSystemUIInputModule`). This stops typing from moving the player. Actions are re-enabled one frame after closing, so the Esc that closed the panel doesn't also open your pause menu.
+- **Every enabled Input System action is disabled**, gameplay and UI maps alike, so nothing in the game reacts to typing, clicks or the gamepad. Use *Action Maps To Keep Enabled* for exceptions such as push-to-talk.
+- **The game's `EventSystem`s are disabled** (their selection is remembered). The panel runs on its own private `EventSystem` and `InputSystemUIInputModule`, with its own copy of the default UI actions, so uGUI and UI Toolkit menus behind it get no clicks, navigation or submit. Turn off *Isolate UI Input* to go back to sharing the game's `EventSystem`.
+- Everything is restored one frame after closing, so the Esc that closed the panel doesn't also open your pause menu.
 
 Code that reads devices directly (`Keyboard.current.spaceKey.wasPressedThisFrame`) bypasses actions, so it can't be blocked. Check `FeedbackManager.IsOpen` there.
 
@@ -150,7 +152,8 @@ You don't need tags: the category is always in the post title (`[Bug] …`), so 
 | Problem | Fix |
 |---|---|
 | Nothing happens on F8 | Check the Console for a "No settings found" warning, and that *Enabled In Editor* is on. |
-| Panel opens but can't be clicked or typed in | If you use an `EventSystem` with `InputSystemUIInputModule`, make sure its action map's name is in *Input Maps To Keep Enabled*. |
+| Game menus react behind the panel | Make sure *Disable Game Input* and *Isolate UI Input* are on, and *Action Maps To Keep Enabled* doesn't list your UI map. |
+| Panel opens but can't be clicked | If the project has a `PanelInputConfiguration` that stops UI Toolkit from using the `EventSystem`, turn off *Isolate UI Input* and add your UI map to *Action Maps To Keep Enabled*. |
 | Input stops working while paused | Input System *Update Mode* set to *Process Events In Fixed Update* doesn't process input when `timeScale` is 0. Use Dynamic Update, or turn off *Pause Time*. |
 | `400` error mentioning `thread_name` | The webhook isn't in a Forum channel. Untick *Post To Forum Channel*. |
 | `404 Unknown Webhook` | The webhook was deleted. Create a new one and update the settings. |

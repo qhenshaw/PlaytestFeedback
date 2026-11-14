@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using PlaytestFeedback.Internal;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.Cursor;
 using Object = UnityEngine.Object;
@@ -46,7 +48,13 @@ namespace PlaytestFeedback
         CursorLockMode _previousLockState;
         bool _previousCursorVisible;
         readonly List<InputAction> _disabledActions = new List<InputAction>();
+        readonly List<(EventSystem eventSystem, GameObject selected)> _disabledEventSystems = new List<(EventSystem, GameObject)>();
         Coroutine _reenableInputRoutine;
+
+        // Private UI input used while the panel is open, so the game's UI actions can all be disabled.
+        GameObject _privateInputObject;
+        EventSystem _privateEventSystem;
+        DefaultInputActions _privateActions;
 
         // Snapshot taken when the panel opens.
         Dictionary<string, object> _systemSnapshot;
@@ -174,6 +182,7 @@ namespace PlaytestFeedback
             if (transform.parent == null) DontDestroyOnLoad(gameObject);
 
             CreateInput();
+            CreatePrivateUiInput();
             CreateUi();
         }
 
@@ -218,6 +227,8 @@ namespace PlaytestFeedback
             }
 
             _view?.Dispose();
+            _privateActions?.Dispose();
+            _privateActions = null;
             if (_runtimePanelSettings != null) Destroy(_runtimePanelSettings);
             Instance = null;
         }
@@ -228,6 +239,33 @@ namespace PlaytestFeedback
         {
             _toggleAction = settings.CreateToggleActionInstance();
             _toggleAction.performed += OnTogglePerformed;
+        }
+
+        void CreatePrivateUiInput()
+        {
+            if (!settings.isolateUiInput) return;
+
+            // A separate DefaultInputActions instance: the module's own AssignDefaultActions() uses a
+            // static instance that a game module on default actions would share with us.
+            _privateActions = new DefaultInputActions();
+
+            _privateInputObject = new GameObject("Feedback UI Input");
+            _privateInputObject.SetActive(false);
+            _privateInputObject.transform.SetParent(transform, false);
+
+            _privateEventSystem = _privateInputObject.AddComponent<EventSystem>();
+            var module = _privateInputObject.AddComponent<InputSystemUIInputModule>();
+            module.actionsAsset = _privateActions.asset;
+            module.point = InputActionReference.Create(_privateActions.UI.Point);
+            module.leftClick = InputActionReference.Create(_privateActions.UI.Click);
+            module.rightClick = InputActionReference.Create(_privateActions.UI.RightClick);
+            module.middleClick = InputActionReference.Create(_privateActions.UI.MiddleClick);
+            module.scrollWheel = InputActionReference.Create(_privateActions.UI.ScrollWheel);
+            module.move = InputActionReference.Create(_privateActions.UI.Navigate);
+            module.submit = InputActionReference.Create(_privateActions.UI.Submit);
+            module.cancel = InputActionReference.Create(_privateActions.UI.Cancel);
+            module.trackedDevicePosition = InputActionReference.Create(_privateActions.UI.TrackedDevicePosition);
+            module.trackedDeviceOrientation = InputActionReference.Create(_privateActions.UI.TrackedDeviceOrientation);
         }
 
         void CreateUi()
@@ -299,12 +337,17 @@ namespace PlaytestFeedback
             TakeSnapshot();
 
             // Capture the frame before the panel is visible so it never appears in screenshots.
-            yield return s_EndOfFrame;
-            var frame = ScreenCapture.CaptureScreenshotAsTexture();
-            if (frame != null)
+            // Batch mode never renders, so WaitForEndOfFrame would never resume: open without a frame.
+            Texture2D frame = null;
+            if (!Application.isBatchMode)
             {
-                frame.name = "Feedback Frozen Frame";
-                frame.wrapMode = TextureWrapMode.Clamp;
+                yield return s_EndOfFrame;
+                frame = ScreenCapture.CaptureScreenshotAsTexture();
+                if (frame != null)
+                {
+                    frame.name = "Feedback Frozen Frame";
+                    frame.wrapMode = TextureWrapMode.Clamp;
+                }
             }
 
             _opening = false;
@@ -346,26 +389,44 @@ namespace PlaytestFeedback
 
             if (_reenableInputRoutine != null)
             {
-                // Reopened before the previous close re-enabled input: those actions are still off.
+                // Reopened before the previous close re-enabled input: those actions and
+                // EventSystems are still off and still listed, so keep the lists.
                 StopCoroutine(_reenableInputRoutine);
                 _reenableInputRoutine = null;
             }
             else
             {
                 _disabledActions.Clear();
+                _disabledEventSystems.Clear();
             }
 
             if (settings.disableGameInput)
             {
-                var keep = new HashSet<string>(settings.inputMapsToKeepEnabled ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+                var keep = new HashSet<string>(settings.actionMapsToKeepEnabled ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
                 foreach (var action in InputSystem.ListEnabledActions())
                 {
                     if (action == _toggleAction) continue;
+                    if (_privateActions != null && action.actionMap?.asset == _privateActions.asset) continue;
                     var mapName = action.actionMap?.name;
                     if (mapName != null && keep.Contains(mapName)) continue;
                     action.Disable();
                     if (!_disabledActions.Contains(action)) _disabledActions.Add(action);
                 }
+            }
+
+            if (_privateInputObject != null)
+            {
+                // The game's EventSystems go first, so ours becomes EventSystem.current.
+                // Resources.FindObjectsOfTypeAll works on every Unity 6 version (FindObjectsSortMode is
+                // obsolete in newer versions, and the overloads without it don't exist in 6000.0).
+                foreach (var eventSystem in Resources.FindObjectsOfTypeAll<EventSystem>())
+                {
+                    if (eventSystem == _privateEventSystem || !eventSystem.isActiveAndEnabled) continue;
+                    if (!eventSystem.gameObject.scene.IsValid()) continue; // Prefab assets.
+                    _disabledEventSystems.Add((eventSystem, eventSystem.currentSelectedGameObject));
+                    eventSystem.enabled = false;
+                }
+                _privateInputObject.SetActive(true);
             }
         }
 
@@ -375,6 +436,9 @@ namespace PlaytestFeedback
             if (settings.pauseAudio) AudioListener.pause = _previousAudioPaused;
             Cursor.lockState = _previousLockState;
             Cursor.visible = _previousCursorVisible;
+
+            // Stop the panel's private input right away; the game's input comes back below.
+            if (_privateInputObject != null) _privateInputObject.SetActive(false);
 
             if (reenableInputImmediately || !isActiveAndEnabled)
             {
@@ -396,6 +460,18 @@ namespace PlaytestFeedback
 
         void ReenableInput()
         {
+            // Same order as they were disabled, so the game's original EventSystem is current again.
+            foreach (var (eventSystem, selected) in _disabledEventSystems)
+            {
+                if (eventSystem == null) continue;
+                eventSystem.enabled = true;
+                if (selected != null && selected.activeInHierarchy && eventSystem.currentSelectedGameObject != selected)
+                {
+                    eventSystem.SetSelectedGameObject(selected);
+                }
+            }
+            _disabledEventSystems.Clear();
+
             foreach (var action in _disabledActions)
             {
                 try

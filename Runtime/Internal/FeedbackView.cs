@@ -317,7 +317,9 @@ namespace PlaytestFeedback.Internal
             _submitButton.SetEnabled(CanSubmit);
 
             bool hasScreenshot = _screenshot != null;
-            _addScreenshot.style.display = hasScreenshot ? DisplayStyle.None : DisplayStyle.Flex;
+            bool canCapture = _frozenFrame != null;
+            _addScreenshot.style.display = hasScreenshot || !canCapture ? DisplayStyle.None : DisplayStyle.Flex;
+            _retakeScreenshot.style.display = canCapture ? DisplayStyle.Flex : DisplayStyle.None;
             _screenshotPreview.style.display = hasScreenshot ? DisplayStyle.Flex : DisplayStyle.None;
             _screenshotThumb.style.backgroundImage = hasScreenshot ? new StyleBackground(_screenshot) : new StyleBackground(StyleKeyword.None);
         }
